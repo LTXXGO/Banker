@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		BE5281C5229A2022009C587D /* Banker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Banker; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE5281C8229A2022009C587D /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		BE5281D2229A2B52009C587D /* Martix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Martix.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +58,7 @@
 		BE5281C7229A2022009C587D /* Banker */ = {
 			isa = PBXGroup;
 			children = (
+				BE5281D2229A2B52009C587D /* Martix.h */,
 				BE5281C8229A2022009C587D /* main.cpp */,
 			);
 			path = Banker;
