@@ -8,57 +8,151 @@
 
 #include <iostream>
 #include <vector>
-#include "Martix.h"
+#include "Process.h"
 using namespace std;
 
-const int numberOfProcesses = 5;
-const int numberOfResource = 3;
-
-vector<int> Available(numberOfResource);
-Martix<int> Max(numberOfProcesses, numberOfResource);
-Martix<int> Allocation(numberOfProcesses, numberOfResource);
-Martix<int> Need(numberOfProcesses, numberOfResource);
-
-Martix<int> Request(numberOfProcesses, numberOfResource);
-
-// MARK: - 银行家算法
-void Banker(int i, int j) {
-    if (Request.elem[i][j] <= Need.elem[i][j]) {
-        if (Request.elem[i][j] <= Available[j]) {
-            cout << "系统试探将资源分配给进程 P[i]" << endl;
-            Available[j] = Available[j] - Request.elem[i][j];
-            Allocation.elem[i][j] = Allocation.elem[i][j] + Request.elem[i][j];
-            Need.elem[i][j] = Need.elem[i][j] - Request.elem[i][j];
-        } else {
-            cout << "i = " << i << ", j = " << j << endl;
-            cout << "尚无足够资源, 需要等待" << endl;
-        }
-    } else {
-        cout << "出错, 所需资源已超过所宣布的最大值" << endl;
-        exit(-1);
-    }
-    // 执行安全性算法, 若分配后系统安全, 则将资源正式分配给进程 P[i] , 否则恢复原状态, 让进程 P[i] 等待
+//试探分配
+void tryAllocate(int process, Resource resource)
+{
+    Available.A -= resource.A;
+    Available.B -= resource.B;
+    Available.C -= resource.C;
+    
+    Allocation[process].A += resource.A;
+    Allocation[process].B += resource.B;
+    Allocation[process].C += resource.C;
+    
+    Need[process].A -= resource.A;
+    Need[process].B -= resource.B;
+    Need[process].C -= resource.C;
 }
 
-// MARK: - 安全性算法
-bool securityCheck(int j) {
-    vector<int> Work(Available.size());
-    vector<bool> Finish(numberOfProcesses, false);
-    for (int i = 0; i < numberOfProcesses; i += 1) {
-        if (Finish[i] == false && Need.elem[i][j] <= Work[j]) {
-            Work[j] = Work[j] + Allocation.elem[i][j];
-            Finish[i] = true;
+//若试探分配后进入不安全状态，将分配回滚
+void rollBack(int process, Resource resource)
+{
+    Available.A += resource.A;
+    Available.B += resource.B;
+    Available.C += resource.C;
+    
+    Allocation[process].A -= resource.A;
+    Allocation[process].B -= resource.B;
+    Allocation[process].C -= resource.C;
+    
+    Need[process].A += resource.A;
+    Need[process].B += resource.B;
+    Need[process].C += resource.C;
+}
+
+//安全性检查
+bool safeCheck()
+{
+    Resource Work = Available;
+    bool Finish[NumberOfProcesses] = {false, false, false, false, false};
+    int j = 0;
+    
+    for (int i = 0; i < NumberOfProcesses; i++) {
+        //是否已检查过
+        if (Finish[i] == false) {
+            //是否有足够的资源分配给该进程
+            if (Need[i].A <= Work.A && Need[i].B <= Work.B && Need[i].C <= Work.C) {
+                // 有则使其执行完成，并将已分配给该进程的资源全部回收
+                Work.A += Allocation[i].A;
+                Work.B += Allocation[i].B;
+                Work.C += Allocation[i].C;
+                Finish[i] = true;
+                safe[j] = i;
+                j += 1;
+                i = -1;//重新进行遍历
+            }
         }
     }
-    for (int i = 0; i < numberOfProcesses; i += 1) {
-        if(Finish[i] == false) {
+    // 如果所有进程的 Finish 向量都为 true 则处于安全状态，否则为不安全状态
+    for (int i = 0; i < NumberOfProcesses; i++) {
+        if (Finish[i] == false) {
             return false;
         }
     }
     return true;
 }
 
-int main() {
+//资源分配请求
+bool request(int process, Resource resource) {
+    // request 向量需小于Need矩阵中对应的向量
+    if(resource.A <= Need[process].A && resource.B <= Need[process].B && resource.C <= Need[process].C) {
+        // request 向量需小于Available向量
+        if(resource.A <= Available.A && resource.B <= Available.B && resource.C <= Available.C) {
+            // 试探分配
+            tryAllocate(process,resource);
+            // 安全检查, 如果安全则完成本次请求
+            if(safeCheck()) {
+                return true;
+            } else {
+                // 否则将试探分配资源回滚
+                cout << "安全性检查失败。原因：系统将进入不安全状态，可能引起死锁。" << endl;
+                rollBack(process, resource);
+            }
+        } else {
+            cout << "安全性检查失败。原因：请求向量大于可利用资源向量。" << endl;
+        }
+    } else {
+        cout << "安全性检查失败。原因：请求向量大于需求向量。" << endl;
+    }
+    return false;
+}
+
+//输出资源分配表
+void printCurrentStatusTable()
+{
+    cout << "当前时刻资源分配情况: " << endl;
+    cout << "+--------------------------------------------------------+" << endl;
+    cout << "|       |    Max    |Allocation |    Need   | Available  |" << endl;
+    cout << "|Process|-----------+-----------+-----------+------------|" << endl;
+    cout << "|       | A   B   C | A   B   C | A   B   C | A   B   C  |" << endl;
+    cout << "|-------+-----------+-----------+-----------+------------|" << endl;
     
+    printf( "| P0    | %d   %d   %d | %d   %d   %d | %d   %d   %d | %d   %d   %d  |\n", Max[0].A,Max[0].B,Max[0].C,Allocation[0].A,Allocation[0].B,Allocation[0].C,Need[0].A,Need[0].B,Need[0].C,Available.A,Available.B,Available.C);
+    cout << "|-------+-----------+-----------+-----------+------------|" << endl;
+    
+    for (int i = 1; i < NumberOfProcesses; i++) {
+        printf( "| P%d    | %d   %d   %d | %d   %d   %d | %d   %d   %d |            |\n",
+               i,
+               Max[i].A, Max[i].B, Max[i].C,
+               Allocation[i].A, Allocation[i].B, Allocation[i].C,
+               Need[i].A, Need[i].B, Need[i].C);
+        cout << "|-------+-----------+-----------+-----------+------------|" << endl;
+    }
+    cout << endl;
+}
+
+int main() {
+    printCurrentStatusTable();
+    if (safeCheck()) {
+        printf("当前系统处于安全状态。\n");
+        printf("安全序列是{ P%d, P%d, P%d, P%d, P%d }。\n", safe[0], safe[1], safe[2], safe[3], safe[4]);
+    } else {
+        printf("当前系统处于不安全状态。\n");
+        exit(-1);
+    }
+    
+    char ch;
+    do {
+        int process;
+        Resource resource;
+        printCurrentStatusTable();
+        printf("请依次输入请求分配的进程和对三类资源的请求数量：");
+        cin >> process >> resource.A >> resource.B >> resource.C;
+        if (request(process, resource))
+        {
+            printf("分配成功。\n");
+            printf("安全序列是{P%d,P%d,P%d,P%d,P%d}。\n",safe[0],safe[1],safe[2],safe[3],safe[4]);
+        } else {
+            cout << "分配失败。" << endl;
+        }
+        printf("是否继续分配？(Y/N):");
+        cin >> ch;
+    } while (ch == 'Y' || ch == 'y');
+
+over:
+    printf("执行完毕。");
     return 0;
 }
