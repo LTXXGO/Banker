@@ -51,7 +51,8 @@ Resource Need[NumberOfProcesses] =
     {4, 3, 1}
 };
 
-//可用资源向量
 Resource Available = {3, 3, 2};
+Resource Work;
+bool Finish[NumberOfProcesses] = {false, false, false, false, false};
 
 #endif /* Process_h */
