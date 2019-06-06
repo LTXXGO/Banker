@@ -14,10 +14,10 @@ using namespace std;
 int main() {
     printCurrentStatusTable();
     safetyCheck();
-    while (1) {
+    char select = 'Y';
+    while (select == 'Y' || select == 'y') {
         int process;
         Resource resource;
-
         cout << "输入请求资源的进程下标(如0表示P0): ";
         cin >> process;
         cout << "输入请求资源的数量: " << endl;
@@ -27,24 +27,13 @@ int main() {
         cin >> resource.B;
         cout << "C: ";
         cin >> resource.C;
-        
-        if (request(process, resource))
-        {
+        if (request(process, resource)) {
             cout << "分配成功。" << endl;
         } else {
             cout << "分配失败。" << endl;
         }
-        
         cout << "继续分配？(Y/N): ";
-        char select;
         cin >> select;
-        if (select == 'N' || select == 'n') {
-            break;
-        } else if (select == 'Y' || select == 'y') {
-            continue;
-        } else {
-            exit(-1);
-        }
     }
     return 0;
 }
